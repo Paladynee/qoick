@@ -1,0 +1,20 @@
+[package]
+name = "qoi"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+walkdir = "2.5.0"
+
+[dependencies.image]
+version = "0.25.10"
+default-features = false
+features = ["png", "jpeg", "qoi"]
+
+[dev-dependencies]
+criterion = "0.4"
+
+[[bench]]
+name = "qoi_bench"
+path = "benches/qoi_bench.rs"
+harness = false

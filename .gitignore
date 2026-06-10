@@ -1,0 +1,9 @@
+target/
+test_images/
+**/*.png
+**/*.qoi
+**/*.bsc
+**/*.avif
+**/*.webp
+**/*.jpeg
+**/*.jpg
