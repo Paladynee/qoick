@@ -7,7 +7,7 @@ use std::ptr;
 use crate::prepare::QOI_MAGIC;
 use crate::prepare::QOI_PADDING;
 
-struct Buffer<const BOUNDS_CHECK: bool>
+struct Buffer
 where
     Self: Pusher,
 {
@@ -20,21 +20,7 @@ trait Pusher {
     fn extend_from_array<const N: usize>(&mut self, slice: [u8; N]);
 }
 
-impl Pusher for Buffer<true> {
-    type Data = Vec<u8>;
-
-    #[inline(always)]
-    fn push(&mut self, val: u8) {
-        self.data.push(val);
-    }
-
-    #[inline(always)]
-    fn extend_from_array<const N: usize>(&mut self, slice: [u8; N]) {
-        self.data.extend_from_slice(&slice);
-    }
-}
-
-impl Pusher for Buffer<false> {
+impl Pusher for Buffer {
     type Data = *mut u8;
 
     #[inline(always)]
@@ -59,7 +45,7 @@ pub(crate) unsafe fn qoi_encode_ch4_preallocated(
     image_ptr: *const u8, width: u32, height: u32, out_ptr: *mut u8,
 ) -> usize {
     unsafe {
-        qoi_encode_generic::<4, false>(image_ptr, width, height, Buffer {
+        qoi_encode_generic::<4>(image_ptr, width, height, Buffer {
             data: out_ptr,
         })
         .data
@@ -73,42 +59,17 @@ pub(crate) unsafe fn qoi_encode_ch3_preallocated(
     image_ptr: *const u8, width: u32, height: u32, out_ptr: *mut u8,
 ) -> usize {
     unsafe {
-        let res =
-            qoi_encode_generic::<3, false>(image_ptr, width, height, Buffer {
-                data: out_ptr,
-            })
-            .data;
+        let res = qoi_encode_generic::<3>(image_ptr, width, height, Buffer {
+            data: out_ptr,
+        })
+        .data;
 
         println!("res = {res:p}\nimg = {image_ptr:p}");
         res.addr() - out_ptr.addr()
     }
 }
 
-#[inline(never)]
-pub(crate) unsafe fn qoi_encode_ch4_vec(
-    image_ptr: *const u8, width: u32, height: u32, out: Vec<u8>,
-) -> Vec<u8> {
-    unsafe {
-        qoi_encode_generic::<4, true>(image_ptr, width, height, Buffer {
-            data: out,
-        })
-        .data
-    }
-}
-
-#[inline(never)]
-pub(crate) unsafe fn qoi_encode_ch3_vec(
-    image_ptr: *const u8, width: u32, height: u32, out: Vec<u8>,
-) -> Vec<u8> {
-    unsafe {
-        qoi_encode_generic::<3, true>(image_ptr, width, height, Buffer {
-            data: out,
-        })
-        .data
-    }
-}
-
-#[expect(unused)]
+#[allow(unused)]
 pub const QOI_OP_INDEX: u8 = 0b00000000;
 pub const QOI_OP_DIFF: u8 = 0b01000000;
 pub const QOI_OP_LUMA: u8 = 0b10000000;
@@ -119,16 +80,13 @@ pub const QOI_OP_RGBA: u8 = 0b11111111;
 /// The everything function. This is used ONLY for monomorphizing the 4
 /// versions of this function. It could be seen like a type safe macro.
 #[inline(always)]
-unsafe fn qoi_encode_generic<const CHANNELS: usize, const PUSH_ALLOCS: bool>(
+unsafe fn qoi_encode_generic<const CHANNELS: usize>(
     // invariant: must point to at least width * height * CHANNELS bytes.
     image_ptr: *const u8,
     width: u32,
     height: u32,
-    mut out: Buffer<PUSH_ALLOCS>,
-) -> Buffer<PUSH_ALLOCS>
-where
-    Buffer<PUSH_ALLOCS>: Pusher,
-{
+    mut out: Buffer,
+) -> Buffer {
     assert!(CHANNELS == 3 || CHANNELS == 4);
 
     out.extend_from_array(QOI_MAGIC);
@@ -237,23 +195,25 @@ where
                     continue;
                 }
                 _ => {
-                    // todo @perf: early return dg, does it increase
-                    // performance?
-                    let drg = dr.wrapping_sub(dg);
-                    let dbg = db.wrapping_sub(dg);
+                    // @perf: this condition gains us ~1.3% perf
+                    if matches!(dg, -32..=31) {
+                        let drg = dr.wrapping_sub(dg);
+                        let dbg = db.wrapping_sub(dg);
 
-                    if matches!((dg, drg, dbg), (-32..=31, -8..=7, -8..=7)) {
-                        let mut buf1 = QOI_OP_LUMA;
-                        buf1 |= (dg.wrapping_add(32)) as u8;
-                        let mut buf2 = 0u8;
-                        buf2 |= (drg.wrapping_add(8) << 4) as u8;
-                        buf2 |= (dbg.wrapping_add(8)) as u8;
+                        if matches!((dg, drg, dbg), (-32..=31, -8..=7, -8..=7))
+                        {
+                            let mut buf1 = QOI_OP_LUMA;
+                            buf1 |= (dg.wrapping_add(32)) as u8;
+                            let mut buf2 = 0u8;
+                            buf2 |= (drg.wrapping_add(8) << 4) as u8;
+                            buf2 |= (dbg.wrapping_add(8)) as u8;
 
-                        out.extend_from_array([buf1, buf2]);
-                        prev_pix = pix;
-                        lookup[hash as usize] = pix;
+                            out.extend_from_array([buf1, buf2]);
+                            prev_pix = pix;
+                            lookup[hash as usize] = pix;
 
-                        continue;
+                            continue;
+                        }
                     }
                 }
             }

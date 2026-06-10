@@ -79,7 +79,7 @@ fn main() {
                                 image::open(path).expect("test file broken");
                             eprintln!("read test {}", path.display());
                             let mut v = vec![];
-                            qoi_encode(&img, &mut v, true)
+                            qoi_encode(&img, &mut v)
                                 .expect("encode failed");
                             let mut out_path = path.to_owned();
                             out_path.set_extension("qoi");
@@ -138,6 +138,6 @@ fn main() {
     // image.save("wife2.png").unwrap();
     // todo: RGB and RGBA mode
     let mut v = vec![];
-    qoi_encode(&image, &mut v, true).expect("failed to encode image");
+    qoi_encode(&image, &mut v).expect("failed to encode image");
     out_file.write_all(&v).expect("failed to write output file");
 }

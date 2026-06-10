@@ -1,33 +1,43 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::Criterion;
+use criterion::black_box;
+use criterion::criterion_group;
+use criterion::criterion_main;
 use image::ColorType;
 use image::ImageEncoder;
 
-use qoi;
-
 fn load_rgba_image() -> image::RgbaImage {
     // adjust path if you want a different test image
-    image::open("wife2.png").expect("failed to open test image").to_rgba8()
+    image::open("wife2.png")
+        .expect("failed to open test image")
+        .to_rgba8()
 }
 
 fn bench_qoi_encoders(c: &mut Criterion) {
     let img = load_rgba_image();
+    let mut out = Vec::new();
 
     c.bench_function("qoi_encode_rgba (local)", |b| {
         b.iter(|| {
-            let mut out = Vec::new();
-            qoi::public::qoi_encode_rgba(&img, &mut out, true).unwrap();
+            qoi::public::qoi_encode_rgba(&img, &mut out).unwrap();
             black_box(&out);
+            out.clear();
         })
     });
 
     c.bench_function("image crate qoi encoder", |b| {
+        let mut out = Vec::new();
         b.iter(|| {
-            let mut out = Vec::new();
-            let mut encoder = image::codecs::qoi::QoiEncoder::new(&mut out);
+            let encoder = image::codecs::qoi::QoiEncoder::new(&mut out);
             encoder
-                .write_image(img.as_raw(), img.width(), img.height(), ColorType::Rgba8.into())
+                .write_image(
+                    img.as_raw(),
+                    img.width(),
+                    img.height(),
+                    ColorType::Rgba8.into(),
+                )
                 .unwrap();
             black_box(&out);
+            out.clear();
         })
     });
 }

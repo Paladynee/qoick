@@ -12,31 +12,30 @@ pub enum QoiEncodeError {
 
 #[inline] // this is just a match, it should be inlined.
 pub fn qoi_encode(
-    img: &image::DynamicImage, out: &mut Vec<u8>, preallocate: bool,
+    img: &image::DynamicImage, out: &mut Vec<u8>,
 ) -> Result<usize, QoiEncodeError> {
     match img {
-        DynamicImage::ImageRgb8(rgb) => qoi_encode_rgb(rgb, out, preallocate),
-        DynamicImage::ImageRgba8(rgba) =>
-            qoi_encode_rgba(rgba, out, preallocate),
+        DynamicImage::ImageRgb8(rgb) => qoi_encode_rgb(rgb, out),
+        DynamicImage::ImageRgba8(rgba) => qoi_encode_rgba(rgba, out),
         _ =>
             if img.has_alpha() {
-                qoi_encode_rgba(&img.to_rgba8(), out, preallocate)
+                qoi_encode_rgba(&img.to_rgba8(), out)
             } else {
-                qoi_encode_rgb(&img.to_rgb8(), out, preallocate)
+                qoi_encode_rgb(&img.to_rgb8(), out)
             },
     }
 }
 
 #[inline]
 pub fn qoi_encode_rgb(
-    img: &image::RgbImage, out: &mut Vec<u8>, preallocate: bool,
+    img: &image::RgbImage, out: &mut Vec<u8>,
 ) -> Result<usize, QoiEncodeError> {
-    qoi_prepare_encode(img, 3, out, preallocate)
+    qoi_prepare_encode(img, 3, out)
 }
 
 #[inline]
 pub fn qoi_encode_rgba(
-    img: &image::RgbaImage, out: &mut Vec<u8>, preallocate: bool,
+    img: &image::RgbaImage, out: &mut Vec<u8>,
 ) -> Result<usize, QoiEncodeError> {
-    qoi_prepare_encode(img, 4, out, preallocate)
+    qoi_prepare_encode(img, 4, out)
 }
