@@ -5,8 +5,11 @@ use criterion::criterion_main;
 use image::ColorType;
 use image::ImageEncoder;
 
+// our current features support png, jpeg and qoi as bench files
+static BENCH_INPUT_FILE_NAME: &str = "wife2.png";
+
 fn load_rgba_image() -> image::RgbaImage {
-    image::open("wife2.png")
+    image::open(BENCH_INPUT_FILE_NAME)
         .expect("failed to open test image")
         .to_rgba8()
 }
@@ -17,7 +20,7 @@ fn bench_qoi_encoders(c: &mut Criterion) {
 
     c.bench_function("qoi_encode_rgba (local)", |b| {
         b.iter(|| {
-            qoi::public::qoi_encode_rgba(&img, &mut out).unwrap();
+            qoick::qoi_encode_rgba_image(&img, &mut out).unwrap();
             black_box(&out);
             out.clear();
         })
