@@ -6,7 +6,6 @@ use image::ColorType;
 use image::ImageEncoder;
 
 fn load_rgba_image() -> image::RgbaImage {
-    // adjust path if you want a different test image
     image::open("wife2.png")
         .expect("failed to open test image")
         .to_rgba8()

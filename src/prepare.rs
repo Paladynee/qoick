@@ -1,7 +1,7 @@
 use std::mem;
 
-use crate::encode::qoi_encode_ch3_preallocated;
-use crate::encode::qoi_encode_ch4_preallocated;
+use crate::encode::qoi_encode_ch3;
+use crate::encode::qoi_encode_ch4;
 use crate::public::QoiEncodeError;
 
 pub(crate) trait BufferInfo {
@@ -67,7 +67,7 @@ pub(crate) fn qoi_prepare_encode(
             // SAFETY: above, `if preallocate` reserved enough bytes
             // to fit the biggest possible QOI image. therefore, we can use
             // the Buffer that increments a pointer.
-            qoi_encode_ch3_preallocated(
+            qoi_encode_ch3(
                 img.data_ptr(),
                 width,
                 height,
@@ -77,7 +77,7 @@ pub(crate) fn qoi_prepare_encode(
             // SAFETY: above, `if preallocate` reserved enough bytes
             // to fit the biggest possible QOI image. therefore, we can use
             // the Buffer that increments a pointer.
-            qoi_encode_ch4_preallocated(
+            qoi_encode_ch4(
                 img.data_ptr(),
                 width,
                 height,
